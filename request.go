@@ -77,10 +77,10 @@ func newRequest(hr *http.Request, hc http.ResponseWriter) *Request {
         Body:       hr.Body,
         Close:      hr.Close,
         Host:       hr.Host,
-        Referer:    hr.Referer,
-        UserAgent:  hr.UserAgent,
+        Referer:    hr.Referer(),
+        UserAgent:  hr.UserAgent(),
         FullParams: hr.Form,
-        Cookie:     hr.Cookie,
+        Cookie:     hr.Cookies(),
         RemoteAddr: remoteAddr.IP.String(),
         RemotePort: remoteAddr.Port,
     }
@@ -141,8 +141,8 @@ func newRequestCgi(headers http.Header, body io.Reader) *Request {
 
 func parseForm(m map[string][]string, query string) (err os.Error) {
     data := make(map[string]*vector.StringVector)
-    for _, kv := range strings.Split(query, "&", -1) {
-        kvPair := strings.Split(kv, "=", 2)
+    for _, kv := range strings.Split(query, "&") {
+        kvPair := strings.SplitN(kv, "=", 2)
 
         var key, value string
         var e os.Error
@@ -181,11 +181,11 @@ func (r *Request) parseParams() (err os.Error) {
     switch r.Method {
     case "POST":
         if r.Body == nil {
-            return os.ErrorString("missing form body")
+            return os.NewError("missing form body")
         }
 
         ct := r.Headers.Get("Content-Type")
-        switch strings.Split(ct, ";", 2)[0] {
+        switch strings.SplitN(ct, ";", 2)[0] {
         case "text/plain", "application/x-www-form-urlencoded", "":
             var b []byte
             if b, err = ioutil.ReadAll(r.Body); err != nil {
